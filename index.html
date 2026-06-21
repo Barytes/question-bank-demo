@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>高考物理智能题库</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <header class="app-header">
+    <div>
+      <p class="eyebrow">高考物理</p>
+      <h1>智能练习题库</h1>
+    </div>
+    <div class="header-metrics" id="headerMetrics"></div>
+  </header>
+
+  <nav class="tabs" aria-label="主视图">
+    <button class="tab active" data-view="bank">题库</button>
+    <button class="tab" data-view="quiz">做题</button>
+    <button class="tab" data-view="diagnosis">学情诊断</button>
+    <button class="tab" data-view="docs">架构文档</button>
+  </nav>
+
+  <main class="shell">
+    <section class="view active" id="view-bank"></section>
+    <section class="view" id="view-quiz"></section>
+    <section class="view" id="view-diagnosis"></section>
+    <section class="view" id="view-docs"></section>
+  </main>
+
+  <script src="data/questions.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

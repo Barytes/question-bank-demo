@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>学情诊断算法文档</title>
+  <link rel="stylesheet" href="doc.css">
+</head>
+<body>
+  <main>
+    <a href="../index.html#docs">返回文档目录</a>
+    <h1>学情诊断算法文档</h1>
+    <p class="lead">本文描述当前 demo 如何从 20 道题的作答记录生成知识点、能力、错因和推荐。</p>
+
+    <h2>1. 模型定位</h2>
+    <p>当前诊断是 MVP 级可解释近似，不是正式 MIRT、G-DINA 或 BKT 校准模型。它使用题目专家标注的 Q-matrix、能力载荷和错因证据，给出可理解的学习反馈。</p>
+
+    <h2>2. 知识点掌握</h2>
+    <p>每道题有 <code>diagnosis.qMatrix</code>，表示题目对知识点的测量权重。系统从 0.55 的初始掌握概率开始，根据答对或答错调整。</p>
+    <pre><code>newScore = clamp(oldScore + direction * 0.14 * weight, 0.08, 0.96)</code></pre>
+    <p><code>direction</code> 在答对时为 1，答错时为 -1。权重越高，该题对该知识点的影响越大。</p>
+
+    <h2>3. 认知能力证据</h2>
+    <p>能力不是知识点。能力载荷用于描述题目对“图形表征、模型迁移、临界判断”等跨题能力的证据强度。证据不足时，页面显示“证据不足”，避免过早下结论。</p>
+
+    <h2>4. 错因诊断</h2>
+    <p>每道题保存 <code>mistakeEvidence</code>。学生答错后，系统累积该题对应的错因，形成“主要错因”列表。当前版本不区分具体错选项，后续可把 A/B/C/D 干扰项映射到不同错因。</p>
+
+    <h2>5. 推荐策略</h2>
+    <ol>
+      <li>优先推荐同错因补救题。</li>
+      <li>其次推荐同知识点锚定题。</li>
+      <li>最后推荐进阶迁移题。</li>
+    </ol>
+
+    <h2>6. 正式模型升级</h2>
+    <p>当有足够学生作答数据后，可以把当前专家权重作为先验，再用 G-DINA 校验 Q-matrix，用 MIRT 校准能力载荷，用 BKT 或纵向 CDM 跟踪知识状态变化。</p>
+  </main>
+</body>
+</html>

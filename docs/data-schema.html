@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>题库数据 Schema 文档</title>
+  <link rel="stylesheet" href="doc.css">
+</head>
+<body>
+  <main>
+    <a href="../index.html#docs">返回文档目录</a>
+    <h1>题库数据 Schema 文档</h1>
+    <p class="lead">本文定义 demo 中每道题的数据结构，作为后续扩展题库、后台和 API 的基础接口。</p>
+
+    <h2>1. 顶层字段</h2>
+    <table>
+      <thead><tr><th>字段</th><th>说明</th></tr></thead>
+      <tbody>
+        <tr><td><code>id</code></td><td>稳定题目 ID，例如 <code>q001</code>。</td></tr>
+        <tr><td><code>title</code></td><td>题目名称，用于列表和诊断推荐。</td></tr>
+        <tr><td><code>source</code></td><td>PDF 文件名、页码和抽取方式。</td></tr>
+        <tr><td><code>questionImage</code></td><td>原题截图路径。</td></tr>
+        <tr><td><code>type</code></td><td><code>single</code>、<code>multi</code> 或 <code>free-response</code>。</td></tr>
+        <tr><td><code>options</code></td><td>选择题选项。当前显示以原题截图为准。</td></tr>
+        <tr><td><code>answer</code></td><td>答案数组，多选题可包含多个选项。</td></tr>
+        <tr><td><code>analysis</code></td><td>答案摘要、分步解析和选项判断。</td></tr>
+        <tr><td><code>tags</code></td><td>知识点、方法、认知能力、易错点。</td></tr>
+        <tr><td><code>diagnosis</code></td><td>诊断权重：Q-matrix、能力载荷、错因证据。</td></tr>
+        <tr><td><code>recommendations</code></td><td>相似题、补救题和进阶题 ID。</td></tr>
+        <tr><td><code>qualityFlags</code></td><td>抽取和解答质量标记。</td></tr>
+      </tbody>
+    </table>
+
+    <h2>2. 示例</h2>
+    <pre><code>{
+  "id": "q001",
+  "title": "拔河中的相互作用力与静摩擦力",
+  "type": "single",
+  "source": { "pdf": "...pdf", "page": 3 },
+  "questionImage": "assets/questions/q001.png",
+  "answer": ["C"],
+  "tags": {
+    "knowledge": ["相互作用力", "静摩擦力"],
+    "methods": ["隔离法"],
+    "cognition": ["概念辨析"],
+    "mistakes": ["把相互作用力大小误判为由质量决定"]
+  }
+}</code></pre>
+
+    <h2>3. 设计原则</h2>
+    <ul>
+      <li>题目内容和页面渲染解耦。</li>
+      <li>知识点与认知能力分开建模。</li>
+      <li>原 PDF 截图作为可核验证据保留。</li>
+      <li>质量不确定性必须显式记录，而不是隐藏在页面实现中。</li>
+    </ul>
+  </main>
+</body>
+</html>

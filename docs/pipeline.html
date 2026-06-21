@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PDF 抽取 Pipeline 文档</title>
+  <link rel="stylesheet" href="doc.css">
+</head>
+<body>
+  <main>
+    <a href="../index.html#docs">返回文档目录</a>
+    <h1>PDF 抽取 Pipeline 文档</h1>
+    <p class="lead">本文描述如何从扫描版教辅 PDF 生成 demo 所需的题目截图和结构化草稿。</p>
+
+    <h2>1. 输入与约束</h2>
+    <p>源文件是扫描版 PDF，普通文本抽取几乎不可用。因此当前流程以页面渲染和题目区域裁切为主，而不是依赖 PDF 内置文本。</p>
+    <p class="notice">扫描版 PDF 的公式、图形、跨栏排版会显著增加自动切题难度。MVP 选择完整、单区域、可读的题目作为样本。</p>
+
+    <h2>2. Pipeline 步骤</h2>
+    <ol>
+      <li>用 <code>pdftoppm</code> 将 PDF 页面渲染为 PNG。</li>
+      <li>用人工或视觉 agent 标出完整题目区域。</li>
+      <li>用 Pillow 裁剪题目截图，保存到 <code>assets/questions/</code>。</li>
+      <li>将题号、来源页、题型、截图路径写入结构化数据。</li>
+      <li>对无法完全自动确认的内容添加质量标记。</li>
+    </ol>
+
+    <h2>3. 当前脚本</h2>
+    <p><code>scripts/build-crops.py</code> 负责渲染和裁切。当前题目区域使用固定坐标，适合本 PDF 的 demo 样本。</p>
+    <pre><code>python3 scripts/build-crops.py</code></pre>
+
+    <h2>4. 质量标记</h2>
+    <table>
+      <thead><tr><th>标记</th><th>含义</th></tr></thead>
+      <tbody>
+        <tr><td><code>ocr_uncertain</code></td><td>题干或公式来自扫描图，OCR/转写可能有误。</td></tr>
+        <tr><td><code>formula_needs_review</code></td><td>公式需要人工核验。</td></tr>
+        <tr><td><code>answer_generated</code></td><td>答案解析由 agent 推理生成，未完全匹配答案页。</td></tr>
+        <tr><td><code>answer_page_matched</code></td><td>答案页中找到了可对应的答案或解析线索。</td></tr>
+        <tr><td><code>needs_teacher_review</code></td><td>正式使用前需要老师核验。</td></tr>
+      </tbody>
+    </table>
+
+    <h2>5. 后续自动化方向</h2>
+    <p>后续可以用 OCR、版面检测、题号识别和图文区域合并替代固定坐标。对于跨页题，需要生成多图组合或转为结构化文本题干。</p>
+  </main>
+</body>
+</html>
