@@ -8,6 +8,7 @@ const requiredDocs = [
   'pipeline.html',
   'algorithm.html',
   'data-schema.html',
+  'skills.html',
 ];
 
 function fail(message) {

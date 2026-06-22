@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>项目内 Skills 实现原理</title>
+  <link rel="stylesheet" href="doc.css">
+</head>
+<body>
+  <main>
+    <a href="../index.html#docs">返回文档目录</a>
+    <h1>项目内 Skills 实现原理</h1>
+    <p class="lead">本文说明当前项目中的三个 skill 是什么、为什么要这样拆、每个 skill 负责什么，以及它们如何协作生成题库 demo。</p>
+
+    <h2>1. 这里的 skill 是什么</h2>
+    <p>本项目中的 skill 不是安装到全局环境里的 Codex skill，而是放在 <code>skills/</code> 目录下的项目内工作流说明。它们的作用类似“给 agent 和开发者看的操作手册”。</p>
+    <p>之所以把流程写成 skill，是因为 PDF 题库生产不是一次性脚本，而是一组可重复的工作：</p>
+    <ol>
+      <li>从 PDF 中抽取题目。</li>
+      <li>生成答案、解析和标签。</li>
+      <li>根据作答记录生成学情诊断。</li>
+    </ol>
+    <p>这三步边界不同、质量要求不同、可自动化程度也不同，所以拆成三个 skill。</p>
+
+    <h2>2. 三个 skill 的分工</h2>
+    <table>
+      <thead><tr><th>Skill</th><th>输入</th><th>输出</th><th>核心责任</th></tr></thead>
+      <tbody>
+        <tr><td><code>pdf-extraction</code></td><td>扫描版 PDF</td><td>页面图、题目截图、来源页</td><td>把不可直接编辑的 PDF 转成可核验题目资产。</td></tr>
+        <tr><td><code>solution-generation</code></td><td>题目截图和结构化草稿</td><td>答案、解析、标签、质量标记</td><td>把题目变成可练习、可解释、可诊断的数据。</td></tr>
+        <tr><td><code>learning-diagnosis</code></td><td>题库数据和作答记录</td><td>知识点掌握、能力证据、错因、推荐</td><td>把做题结果转成学习反馈。</td></tr>
+      </tbody>
+    </table>
+
+    <h2>3. pdf-extraction 的实现原理</h2>
+    <p><code>pdf-extraction</code> 解决的是“题目从哪里来”的问题。扫描版 PDF 没有可靠文本层，所以不能简单用文本抽取。</p>
+    <p>当前实现采用图像路线：</p>
+    <ol>
+      <li>用 <code>pdftoppm</code> 把 PDF 页面渲染成 PNG。</li>
+      <li>从页面图中选择完整题区。</li>
+      <li>用 Pillow 按坐标裁剪题目截图。</li>
+      <li>把截图保存到 <code>assets/questions/</code>。</li>
+      <li>在题目数据中记录来源 PDF、页码和截图路径。</li>
+    </ol>
+    <p>它的关键原则是：先保留视觉证据。即使 OCR 或解析暂时不完美，老师仍然能看到原题截图，确认题目内容。</p>
+
+    <h2>4. solution-generation 的实现原理</h2>
+    <p><code>solution-generation</code> 解决的是“题目如何变成可学习内容”的问题。它不只生成答案，还要生成能被页面和诊断算法使用的结构化信息。</p>
+    <p>每道题至少需要这些内容：</p>
+    <ul>
+      <li>正确答案或参考解答。</li>
+      <li>解析摘要和分步过程。</li>
+      <li>知识点、方法、认知能力、易错点。</li>
+      <li>诊断字段：Q-matrix、能力载荷、错因证据。</li>
+      <li>推荐关系：相似题、补救题、进阶题。</li>
+      <li>质量标记：是否 OCR 不确定、是否需要老师核验。</li>
+    </ul>
+    <p>这里最重要的是“显式标记不确定性”。如果答案解析来自 agent 推理，而不是已经和答案页完全匹配，就必须保留 <code>answer_generated</code> 和 <code>needs_teacher_review</code>。</p>
+
+    <h2>5. learning-diagnosis 的实现原理</h2>
+    <p><code>learning-diagnosis</code> 解决的是“做完题后怎么反馈”的问题。它读取两类信息：</p>
+    <ol>
+      <li>题目中预先写好的诊断字段。</li>
+      <li>学生保存在浏览器 localStorage 中的作答记录。</li>
+    </ol>
+    <p>然后它按三条线计算：</p>
+    <table>
+      <thead><tr><th>计算线索</th><th>使用字段</th><th>结果</th></tr></thead>
+      <tbody>
+        <tr><td>知识点</td><td><code>diagnosis.qMatrix</code></td><td>掌握概率和证据量。</td></tr>
+        <tr><td>能力</td><td><code>diagnosis.abilityLoadings</code></td><td>正负能力证据和证据充分度。</td></tr>
+        <tr><td>错因</td><td><code>diagnosis.mistakeEvidence</code></td><td>主要错因统计和补救方向。</td></tr>
+      </tbody>
+    </table>
+    <p>当前模型故意保持简单，优先保证老师能看懂原因。正式平台可以在保留这些字段的基础上升级成 G-DINA、MIRT 或 BKT。</p>
+
+    <h2>6. 三个 skill 如何串起来</h2>
+    <div class="diagram">
+      pdf-extraction -> solution-generation -> learning-diagnosis
+    </div>
+    <p>更具体地说：</p>
+    <ol>
+      <li><code>pdf-extraction</code> 生成题目截图和来源信息。</li>
+      <li><code>solution-generation</code> 为这些题目补上答案、解析、标签和诊断字段。</li>
+      <li><code>learning-diagnosis</code> 在学生做题后消费这些字段，生成诊断报告。</li>
+    </ol>
+    <p>这三个 skill 对应题库系统的三个能力层：内容生产、内容理解、学习反馈。</p>
+
+    <h2>7. 为什么不把三个 skill 合成一个</h2>
+    <p>合成一个大流程看起来更简单，但会让边界混乱。例如 PDF 裁切失败和诊断算法不合理是两类完全不同的问题；答案解析质量和页面显示也应该分开处理。</p>
+    <p>拆开之后，每个环节都可以单独改进：</p>
+    <ul>
+      <li>以后 OCR 变强，只需要替换 <code>pdf-extraction</code>。</li>
+      <li>以后答案页对齐更准，只需要增强 <code>solution-generation</code>。</li>
+      <li>以后有真实学生数据，只需要升级 <code>learning-diagnosis</code>。</li>
+    </ul>
+    <p>这种拆法能让 demo 逐步演进成真正的平台，而不是一次性页面。</p>
+  </main>
+</body>
+</html>

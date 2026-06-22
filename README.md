@@ -90,6 +90,7 @@ http://127.0.0.1:8765/
 - `docs/pipeline.html`
 - `docs/algorithm.html`
 - `docs/data-schema.html`
+- `docs/skills.html`
 
 ## 项目内 skills
 
@@ -118,4 +119,3 @@ node --check data/questions.js
 - 部分答案解析为 demo 生成内容，正式教学使用前需要老师核验。
 - 当前诊断模型是简版原型，不应作为正式学业评价。
 - 作答记录保存在浏览器 `localStorage`，没有账号系统和服务端数据库。
-

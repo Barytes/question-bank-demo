@@ -426,6 +426,7 @@
           ${renderDocLink('PDF 抽取 Pipeline 文档', '扫描 PDF 渲染、题区裁切、质量标记和后续自动化。', 'docs/pipeline.html')}
           ${renderDocLink('学情诊断算法文档', 'Q-matrix、能力载荷、错因证据和推荐策略。', 'docs/algorithm.html')}
           ${renderDocLink('题库数据 Schema 文档', '题目字段、标签结构、诊断字段和扩展原则。', 'docs/data-schema.html')}
+          ${renderDocLink('项目内 Skills 实现原理', '说明 pdf-extraction、solution-generation、learning-diagnosis 三个 skill 的分工和协作。', 'docs/skills.html')}
         </div>
       </div>
     `;

@@ -10,9 +10,19 @@
   <main>
     <a href="../index.html#docs">返回文档目录</a>
     <h1>题库数据 Schema 文档</h1>
-    <p class="lead">本文定义 demo 中每道题的数据结构，作为后续扩展题库、后台和 API 的基础接口。</p>
+    <p class="lead">本文定义每道题在系统里的数据结构。它既要能驱动页面展示，也要能支撑判题、解析、学情诊断和推荐。</p>
 
-    <h2>1. 顶层字段</h2>
+    <h2>1. Schema 的设计目标</h2>
+    <p>题库数据不是简单的题干和答案。为了让系统能诊断学生，题目还需要包含知识点、能力、错因和推荐关系。</p>
+    <p>这个 schema 有四个目标：</p>
+    <ol>
+      <li>题目能被页面直接渲染出来。</li>
+      <li>答案能被系统自动判定或用于自评。</li>
+      <li>解析能按步骤展示，方便学生复盘。</li>
+      <li>诊断字段能被算法消费，生成学情报告。</li>
+    </ol>
+
+    <h2>2. 顶层字段</h2>
     <table>
       <thead><tr><th>字段</th><th>说明</th></tr></thead>
       <tbody>
@@ -30,8 +40,9 @@
         <tr><td><code>qualityFlags</code></td><td>抽取和解答质量标记。</td></tr>
       </tbody>
     </table>
+    <p>其中最重要的接口是 <code>answer</code>、<code>analysis</code>、<code>tags</code>、<code>diagnosis</code> 和 <code>recommendations</code>。它们决定了系统能否从“普通题库”变成“能做学情诊断的题库”。</p>
 
-    <h2>2. 示例</h2>
+    <h2>3. 示例</h2>
     <pre><code>{
   "id": "q001",
   "title": "拔河中的相互作用力与静摩擦力",
@@ -47,13 +58,84 @@
   }
 }</code></pre>
 
-    <h2>3. 设计原则</h2>
+    <h2>4. 字段如何被页面使用</h2>
+    <table>
+      <thead><tr><th>页面</th><th>使用的字段</th><th>用途</th></tr></thead>
+      <tbody>
+        <tr><td>题库页</td><td><code>id</code>、<code>title</code>、<code>type</code>、<code>difficulty</code></td><td>展示题目卡片、题型和完成状态。</td></tr>
+        <tr><td>做题页</td><td><code>questionImage</code>、<code>options</code>、<code>answer</code></td><td>显示原题、提供选项、提交后判题。</td></tr>
+        <tr><td>解析区</td><td><code>analysis.summary</code>、<code>analysis.steps</code></td><td>显示答案概括和分步解析。</td></tr>
+        <tr><td>诊断页</td><td><code>diagnosis</code>、<code>tags</code>、<code>recommendations</code></td><td>生成掌握概率、能力证据、错因和补练推荐。</td></tr>
+        <tr><td>文档和维护</td><td><code>source</code>、<code>qualityFlags</code></td><td>追踪题目来源和质量状态。</td></tr>
+      </tbody>
+    </table>
+
+    <h2>5. tags 的分层</h2>
+    <p><code>tags</code> 被分成四类，是为了避免把不同性质的信息混在一起。</p>
+    <table>
+      <thead><tr><th>字段</th><th>含义</th><th>例子</th></tr></thead>
+      <tbody>
+        <tr><td><code>knowledge</code></td><td>课程知识点。</td><td>相互作用力、静摩擦力、圆周运动。</td></tr>
+        <tr><td><code>methods</code></td><td>解题方法。</td><td>隔离法、能量法、图像法。</td></tr>
+        <tr><td><code>cognition</code></td><td>跨题认知能力。</td><td>概念辨析、模型迁移、图形表征。</td></tr>
+        <tr><td><code>mistakes</code></td><td>常见错误模式。</td><td>把速度大小相同误认为速度变化量为零。</td></tr>
+      </tbody>
+    </table>
+    <p>这种分层让系统可以分别回答四个问题：学生不会哪个知识点、缺哪种方法、哪种能力证据不足、最可能犯什么错。</p>
+
+    <h2>6. diagnosis 的结构</h2>
+    <p><code>diagnosis</code> 是算法真正消费的字段。</p>
+    <pre><code>"diagnosis": {
+  "qMatrix": {
+    "相互作用力": 1.0,
+    "静摩擦力": 0.6
+  },
+  "abilityLoadings": {
+    "概念辨析": 0.85,
+    "研究对象切换": 0.55
+  },
+  "mistakeEvidence": {
+    "把相互作用力大小误判为由质量决定": {
+      "ifWrong": 0.85,
+      "ifCorrect": 0.15,
+      "feedback": "若本题出错，优先检查..."
+    }
+  }
+}</code></pre>
+    <p><code>qMatrix</code> 负责知识点掌握，<code>abilityLoadings</code> 负责能力证据，<code>mistakeEvidence</code> 负责错因诊断。更完整的解释见算法文档。</p>
+
+    <h2>7. recommendations 的结构</h2>
+    <p>推荐关系提前写入数据中，当前 demo 不做复杂实时搜索。</p>
+    <pre><code>"recommendations": {
+  "similar": ["q002"],
+  "remediation": ["q003"],
+  "advanced": ["q004"]
+}</code></pre>
+    <table>
+      <thead><tr><th>类型</th><th>用途</th></tr></thead>
+      <tbody>
+        <tr><td><code>similar</code></td><td>同知识点或同题型巩固题。</td></tr>
+        <tr><td><code>remediation</code></td><td>针对错因的补救题。</td></tr>
+        <tr><td><code>advanced</code></td><td>更综合或更迁移的提升题。</td></tr>
+      </tbody>
+    </table>
+
+    <h2>8. 设计原则</h2>
     <ul>
       <li>题目内容和页面渲染解耦。</li>
       <li>知识点与认知能力分开建模。</li>
       <li>原 PDF 截图作为可核验证据保留。</li>
       <li>质量不确定性必须显式记录，而不是隐藏在页面实现中。</li>
+      <li>正式平台化时，尽量保持字段语义不变，只把数据来源从静态文件换成 API。</li>
     </ul>
+
+    <h2>9. 升级到后端 API 时的形态</h2>
+    <p>未来如果接入后端，静态 <code>questions.js</code> 可以拆成接口：</p>
+    <pre><code>GET /api/questions
+GET /api/questions/:id
+POST /api/attempts
+GET /api/diagnosis/me</code></pre>
+    <p>只要接口返回的数据仍遵守这个 schema，前端页面和诊断逻辑就可以平滑迁移。</p>
   </main>
 </body>
 </html>
